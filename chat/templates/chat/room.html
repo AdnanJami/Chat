@@ -1,31 +1,67 @@
-<!-- chat/templates/chat/room.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Chat Room</title>
+    <title>Room: {{ room_name }}</title>
+    <style>
+        #chat-log { width: 100%; height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+        .message { margin-bottom: 8px; }
+        .username { font-weight: bold; }
+        .timestamp { color: #999; font-size: 0.8em; margin-left: 6px; }
+    </style>
 </head>
 <body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
+    <h3>Room: {{ room_name }} | PIN: {{ pin }}</h3>
+    <p>Logged in as: <strong>{{ username }}</strong></p>
+
+    <div id="chat-log"></div><br>
+    <input id="chat-message-input" type="text" size="80" placeholder="Type a message...">
     <input id="chat-message-submit" type="button" value="Send">
+    <button id="leave-btn" onclick="leaveRoom()" style="color:red;">Leave Room</button>
+
     {{ room_name|json_script:"room-name" }}
+    {{ pin|json_script:"pin" }}
+    {{ token|json_script:"token" }}
+
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const pin = JSON.parse(document.getElementById('pin').textContent);
+        const token = JSON.parse(document.getElementById('token').textContent);
+        const chatLog = document.getElementById('chat-log');
 
-        // ✅ Correct - auto-switches to wss:// on HTTPS
+        function appendMessage(username, message, timestamp) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = `<span class="username">${username}</span>: ${message} <span class="timestamp">${timestamp}</span>`;
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function appendNotification(text) {
+            const div = document.createElement('div');
+            div.className = 'notification';
+            div.style.cssText = 'color:#888; font-style:italic; margin-bottom:6px; text-align:center;';
+            div.textContent = text;
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // ← chatSocket defined FIRST
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const chatSocket = new WebSocket(
-            protocol + '://'
-            + window.location.host
-            + '/ws/chat/'
-            + roomName
-            + '/'
+            protocol + '://' + window.location.host + '/ws/chat/' + roomName + '/' + pin + '/?token=' + token
         );
 
+        // ← then handlers defined after
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.message + '\n');
+            if (data.type === 'message') {
+                appendMessage(data.username, data.message, data.timestamp);
+            } else if (data.type === 'join') {
+                appendNotification(`${data.username} joined the room`);
+            } else if (data.type === 'leave') {
+                appendNotification(`${data.username} left the room`);
+            }
         };
 
         chatSocket.onclose = function(e) {
@@ -34,19 +70,24 @@
 
         document.querySelector('#chat-message-input').focus();
         document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.key === 'Enter') {  // enter, return
+            if (e.key === 'Enter') {
                 document.querySelector('#chat-message-submit').click();
             }
         };
 
         document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
+            const input = document.querySelector('#chat-message-input');
+            if (!input.value.trim()) return;
             chatSocket.send(JSON.stringify({
-                'message': message
+                'message': input.value,
             }));
-            messageInputDom.value = '';
+            input.value = '';
         };
+
+        function leaveRoom() {
+            chatSocket.close();
+            window.location.href = '/chat/leave/';
+        }
     </script>
 </body>
 </html>

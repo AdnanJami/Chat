@@ -1,27 +1,47 @@
-<!-- chat/templates/chat/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Chat Rooms</title>
+    <title>Chat</title>
 </head>
 <body>
-    What chat room would you like to enter?<br>
-    <input id="room-name-input" type="text" size="100"><br>
-    <input id="room-name-submit" type="button" value="Enter">
+    <h2>Create a Room</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="text" name="room_name" placeholder="Room name" required><br><br>
+        <button type="submit">Create & Enter</button>
+    </form>
 
-    <script>
-        document.querySelector('#room-name-input').focus();
-        document.querySelector('#room-name-input').onkeyup = function(e) {
-            if (e.key === 'Enter') {  // enter, return
-                document.querySelector('#room-name-submit').click();
-            }
-        };
+    <hr>
 
-        document.querySelector('#room-name-submit').onclick = function(e) {
-            var roomName = document.querySelector('#room-name-input').value;
-            window.location.pathname = '/chat/' + roomName + '/';
-        };
-    </script>
+    <h2>Join a Room</h2>
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="join">
+    <input type="text" name="room_name" placeholder="Room name" required><br><br>
+    <input type="text" name="pin" placeholder="Enter 6-digit PIN" maxlength="6" required><br><br>
+    <button type="submit">Join</button>
+</form>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    {% if history %}
+    <hr>
+    <h2>Recent Rooms</h2>
+    <ul>
+        {% for entry in history %}
+        <li>
+            <a href="/chat/rejoin/{{ entry.pin }}/"><strong>{{ entry.room_name }}</strong></a>
+            <span style="color:#999; font-size:0.85em;">(PIN: {{ entry.pin }})</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <hr>
+    <a href="/chat/logout/">Logout</a>
 </body>
 </html>
