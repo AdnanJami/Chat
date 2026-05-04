@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-r-jo+*d@+7!vk+e05*faeptr+=&g3zuu!uc4oisi2slnz@wzd-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['chat-iayi.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -89,10 +89,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [{
-                "host": os.environ.get("REDIS_HOST"),
-                "port": int(os.environ.get("REDIS_PORT", 11652)),
-                "username": "default",
-                "password": os.environ.get("REDIS_PASSWORD"),
+                "host": os.environ.get("REDIS_HOST", "127.0.0.1"),
+                "port": int(os.environ.get("REDIS_PORT", 6379)),
             }],
         },
     },
@@ -140,6 +138,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+STATIC_ROOT = BASE_DIR / 'staticfiles' 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=2),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -153,5 +153,8 @@ REST_FRAMEWORK = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://chat-iayi.onrender.com',
+    'https://*.trycloudflare.com',
+    'https://goglemeat.duckdns.org',
+    'http://192.168.0.115:8000',
+    'http://localhost:8000',
 ]
