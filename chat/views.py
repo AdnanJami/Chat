@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 def index(request):
     # Redirect to login if no token in session
     if not request.session.get('access_token'):
-        return redirect('/chat/login/')
+        return redirect('/login/')
 
     history = request.session.get('room_history', [])
     return render(request, 'chat/index.html', {'history': history})
@@ -23,7 +23,7 @@ def login_view(request):
             refresh = RefreshToken.for_user(user)
             request.session['access_token'] = str(refresh.access_token)
             request.session['username'] = username
-            return redirect('/chat/')
+            return redirect('/')
         else:
             error = 'Invalid username or password'
 
@@ -35,12 +35,12 @@ def room(request, room_name):
     pin = request.session.get('pin')
 
     if not token or not pin:
-        return redirect('/chat/')
+        return redirect('/')
 
     try:
         ChatRoom.objects.get(name=room_name, pin=pin)
     except ChatRoom.DoesNotExist:
-        return redirect('/chat/')
+        return redirect('/')
 
     return render(request, 'chat/room.html', {
         'room_name': room_name,
@@ -52,7 +52,7 @@ def room(request, room_name):
 
 def create_or_join(request):
     if not request.session.get('access_token'):
-        return redirect('/chat/login/')
+        return redirect('/login/')
 
     history = request.session.get('room_history', [])
 
@@ -66,7 +66,7 @@ def create_or_join(request):
             room = ChatRoom.objects.create(name=room_name)
             request.session['pin'] = room.pin
             _add_to_history(request, room.name, room.pin)
-            return redirect(f'/chat/{room.name}/')
+            return redirect(f'/{room.name}/')
 
         elif action == 'join':
             pin = request.POST.get('pin')
@@ -75,7 +75,7 @@ def create_or_join(request):
                 room = ChatRoom.objects.get(pin=pin, name=room_name)
                 request.session['pin'] = pin
                 _add_to_history(request, room.name, room.pin)
-                return redirect(f'/chat/{room.name}/')
+                return redirect(f'/{room.name}/')
             except ChatRoom.DoesNotExist:
                 return render(request, 'chat/index.html', {
                     'error': 'Invalid PIN',
@@ -105,19 +105,19 @@ def rejoin_room(request, pin):
         request.session.modified = True
         return redirect('/chat/')
     request.session['pin'] = pin
-    return redirect(f'/chat/{room.name}/')
+    return redirect(f'/{room.name}/')
 
 
 def leave_room(request):
     request.session.pop('pin', None)
-    return redirect('/chat/')
+    return redirect('/')
 
 
 def logout_view(request):
     history = request.session.get('room_history', [])  # save history
     request.session.flush()                             # clear session
     request.session['room_history'] = history           # restore history
-    return redirect('/chat/login/')
+    return redirect('/login/')
 
 
 
@@ -137,7 +137,7 @@ def register_view(request):
             refresh = RefreshToken.for_user(user)
             request.session['access_token'] = str(refresh.access_token)
             request.session['username'] = username
-            return redirect('/chat/')
+            return redirect('/')
 
     return render(request, 'chat/register.html', {'error': error})
 
@@ -147,3 +147,28 @@ def _add_to_history(request, room_name, pin):
     history.insert(0, {'room_name': room_name, 'pin': pin})
     request.session['room_history'] = history[:10]
     request.session.modified = True
+    
+from django.shortcuts import render, redirect
+from chat.models import ChatRoom
+
+
+def call(request, room_name):
+    token = request.session.get('access_token')
+    pin = request.session.get('pin')
+    username = request.session.get('username')
+
+    if not token or not pin:
+        return redirect('/')
+
+    try:
+        ChatRoom.objects.get(name=room_name, pin=pin)
+    except ChatRoom.DoesNotExist:
+        return redirect('/')
+
+    return render(request, 'chat/call.html', {
+        'room_name': room_name,
+        'pin': pin,
+        'token': token,
+        'username': username,
+    })
+    

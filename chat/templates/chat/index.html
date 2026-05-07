@@ -34,7 +34,7 @@
     <ul>
         {% for entry in history %}
         <li>
-            <a href="/chat/rejoin/{{ entry.pin }}/"><strong>{{ entry.room_name }}</strong></a>
+            <a href="/rejoin/{{ entry.pin }}/"><strong>{{ entry.room_name }}</strong></a>
             <span style="color:#999; font-size:0.85em;">(PIN: {{ entry.pin }})</span>
         </li>
         {% endfor %}
@@ -42,6 +42,6 @@
     {% endif %}
 
     <hr>
-    <a href="/chat/logout/">Logout</a>
+    <a href="/logout/">Logout</a>
 </body>
 </html>
